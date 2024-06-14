@@ -391,7 +391,6 @@ void Fastor_chip() {
     using namespace Fastor;
     f_chip_a.ones();
 
-    f_chip_a.ones();
     f_chip_b = f_chip_a(all, 2, all);
 
     unused(f_chip_a);
@@ -458,7 +457,6 @@ void Fastor_slice() {
     using namespace Fastor;
     f_slice_a.ones();
 
-    f_slice_a.ones();
     f_slice_b = f_slice_a(all, fseq<1,10>(), all);
 
     unused(f_slice_a);
