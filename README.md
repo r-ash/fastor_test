@@ -10,7 +10,7 @@ sudo apt-get install libeigen3-dev
 Build this with
 
 ```
-cmake -B build
+cmake --build build
 ```
 
 Run

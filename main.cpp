@@ -1,4 +1,3 @@
-#include <iostream>
 #include "unsupported/Eigen/CXX11/Tensor"
 #include <Fastor/Fastor.h>
 
@@ -327,6 +326,7 @@ void Fastor_C_col_major() {
     unused(fC_col);
 }
 
+
 void Fastor_D_col_major() {
 
     using namespace Fastor;
@@ -343,6 +343,129 @@ void Fastor_D_col_major() {
 }
 
 
+Eigen::TensorFixedSize<real_, Eigen::Sizes<TWETY, TEN, FIFTY>> e_chip_a;
+Eigen::TensorFixedSize<real_, Eigen::Sizes<TWETY, FIFTY>> e_chip_b;
+
+Fastor::Tensor<real_,TWETY, TEN, FIFTY> f_chip_a;
+Fastor::Tensor<real_,TWETY, FIFTY> f_chip_b;
+
+
+void Eigen_chip_loop() {
+    using namespace Eigen;
+
+    e_chip_a.setConstant(1);
+    for ( int i = 0; i < TWETY; i++)
+        for ( int k = 0; k < FIFTY; k++)
+            e_chip_b(i, k) = e_chip_a(i, 2, k);
+
+    Fastor::unused(e_chip_a);
+    Fastor::unused(e_chip_b);
+}
+
+
+void Eigen_chip() {
+    using namespace Eigen;
+
+    e_chip_a.setConstant(1);
+    e_chip_b = e_chip_a.chip(2, 1);
+
+    Fastor::unused(e_chip_a);
+    Fastor::unused(e_chip_b);
+}
+
+
+void Fastor_chip_loop() {
+    using namespace Fastor;
+    f_chip_a.ones();
+
+    for ( int i = 0; i < TWETY; i++)
+        for ( int k = 0; k < FIFTY; k++)
+            f_chip_b(i, k) = f_chip_a(i, 2, k);
+
+    unused(f_chip_a);
+    unused(f_chip_b);
+}
+
+
+void Fastor_chip() {
+    using namespace Fastor;
+    f_chip_a.ones();
+
+    f_chip_a.ones();
+    f_chip_b = f_chip_a(all, 2, all);
+
+    unused(f_chip_a);
+    unused(f_chip_b);
+}
+
+
+constexpr int NINE = 9;
+Eigen::TensorFixedSize<real_, Eigen::Sizes<TWETY, TEN, FIFTY>> e_slice_a;
+Eigen::TensorFixedSize<real_, Eigen::Sizes<TWETY, NINE, FIFTY>> e_slice_b;
+
+Fastor::Tensor<real_,TWETY, TEN, FIFTY> f_slice_a;
+Fastor::Tensor<real_,TWETY, NINE, FIFTY> f_slice_b;
+
+// get all but the first idx
+void Eigen_slice_loop() {
+    using namespace Eigen;
+
+    e_slice_a.setConstant(1);
+    for (int i = 0; i < TWETY; i++) {
+        for (int j = 1; j < TEN; j++) {
+            for (int k = 0; k < FIFTY; k++) {
+                e_slice_b(i, j - 1, k) = e_slice_a(i, j, k);
+            }
+        }
+    }
+
+    Fastor::unused(e_slice_a);
+    Fastor::unused(e_slice_b);
+}
+
+
+void Eigen_slice() {
+    using namespace Eigen;
+
+    e_slice_a.setConstant(1);
+
+    constexpr array<Index, 3> offsets = {0, 1, 0};
+    constexpr array<Index, 3> extents = {20, 10, 50};
+    e_slice_b = e_slice_a.slice(offsets, extents);
+    Fastor::unused(e_slice_a);
+    Fastor::unused(e_slice_b);
+}
+
+
+void Fastor_slice_loop() {
+    using namespace Fastor;
+    f_slice_a.ones();
+
+    for (int i = 0; i < TWETY; i++) {
+        for (int j = 1; j < TEN; j++) {
+            for (int k = 0; k < FIFTY; k++) {
+                f_slice_b(i, j - 1, k) = f_slice_a(i, j, k);
+            }
+        }
+    }
+
+    unused(f_slice_a);
+    unused(f_slice_b);
+}
+
+
+void Fastor_slice() {
+    using namespace Fastor;
+    f_slice_a.ones();
+
+    f_slice_a.ones();
+    f_slice_b = f_slice_a(all, fseq<1,10>(), all);
+
+    unused(f_slice_a);
+    unused(f_slice_b);
+}
+
+
 int main() {
     using namespace Fastor;
 
@@ -352,23 +475,37 @@ int main() {
     timeit(Eigen_C);
     timeit(Fastor_C_loop);
     timeit(Eigen_C_loop);
+
     print("Time for computing tensor D (CTran, Fastor, Eigen, Fastor loop, Eigen loop):");
     timeit(CTran_D);
     timeit(Fastor_D);
     timeit(Eigen_D);
     timeit(Fastor_D_loop);
     timeit(Eigen_D_loop);
+
     print("Timing looping (Eigen correct order, Eigen reverse, Fastor correct order, Fastor reverse)");
     timeit(eigen_loop);
     timeit(eigen_reverse_loop);
     timeit(fastor_loop);
     timeit(fastor_reverse_loop);
+
     print("Timing fastor einstein notation with (C row major, C col major, D row major, D col major)");
     timeit(Fastor_C);
     timeit(Fastor_C_col_major);
     timeit(Fastor_D);
     timeit(Fastor_D_col_major);
 
+    print("Timing tensor slicing (Eigen chip in loop, Eigen chip, Fastor chip from loop, Fastor chip)");
+    timeit(Eigen_chip_loop);
+    timeit(Eigen_chip);
+    timeit(Fastor_chip_loop);
+    timeit(Fastor_chip);
+
+    print("Timing tensor slicing (Eigen slice in loop, Eigen slice, Fastor single slice from loop, Fastor slice)");
+    timeit(Eigen_slice_loop);
+    timeit(Eigen_slice);
+    timeit(Fastor_slice_loop);
+    timeit(Fastor_slice);
 
     return 0;
 }
